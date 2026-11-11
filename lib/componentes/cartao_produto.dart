@@ -1,323 +1,272 @@
 import 'package:flutter/material.dart';
-import '../constantes/cores_app.dart';
 import '../modelos/produto.dart';
-import '../utilitarios/formatadores.dart';
-import '../servicos/cache_local_servico.dart';
 
-/// Critério 11 (Desejável): Otimizando código através de componentização.
-/// Card gamer modular para exibição de produtos no catálogo com suporte a favoritos no cache local.
-class CartaoProduto extends StatefulWidget {
+class CartaoProduto extends StatelessWidget {
   final Produto produto;
-  final VoidCallback aoClicar;
-  final VoidCallback aoAdicionarCarrinho;
+  final VoidCallback aoEditar;
+  final VoidCallback aoEliminar;
+  final VoidCallback aoAdicionarAoCarrinho;
+  final VoidCallback? aoVerDetalhes;
 
   const CartaoProduto({
     super.key,
     required this.produto,
-    required this.aoClicar,
-    required this.aoAdicionarCarrinho,
+    required this.aoEditar,
+    required this.aoEliminar,
+    required this.aoAdicionarAoCarrinho,
+    this.aoVerDetalhes,
   });
 
   @override
-  State<CartaoProduto> createState() => _CartaoProdutoState();
-}
-
-class _CartaoProdutoState extends State<CartaoProduto> {
-  bool _favorito = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _verificarFavorito();
-  }
-
-  Future<void> _verificarFavorito() async {
-    final status = await CacheLocalServico.isFavorito(widget.produto.id);
-    if (mounted) {
-      setState(() {
-        _favorito = status;
-      });
-    }
-  }
-
-  Future<void> _alternarFavorito() async {
-    await CacheLocalServico.alternarFavorito(widget.produto.id);
-    if (mounted) {
-      setState(() {
-        _favorito = !_favorito;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _favorito
-                ? '${widget.produto.nome} adicionado aos favoritos!'
-                : '${widget.produto.nome} removido dos favoritos.',
-          ),
-          duration: const Duration(seconds: 1),
-          backgroundColor: CoresApp.superficieCardElevada,
-        ),
-      );
-    }
-  }
-
-  Widget _construirImagemProduto() {
-    final url = widget.produto.imagemUrl;
-    Widget imagemWidget;
-
-    if (url.startsWith('assets/')) {
-      imagemWidget = Image.asset(
-        url,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => Container(
-          color: CoresApp.superficieCardElevada,
-          child: const Icon(Icons.sports_esports, color: CoresApp.roxoNeon, size: 50),
-        ),
-      );
-    } else if (url.startsWith('http')) {
-      imagemWidget = Image.network(
-        url,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => Container(
-          color: CoresApp.superficieCardElevada,
-          child: const Icon(Icons.broken_image, color: Colors.grey, size: 50),
-        ),
-      );
-    } else {
-      imagemWidget = Container(
-        color: CoresApp.superficieCardElevada,
-        child: const Icon(Icons.sports_esports, color: CoresApp.cianoEletrico, size: 50),
-      );
-    }
-
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-      child: AspectRatio(
-        aspectRatio: 16 / 11,
-        child: Hero(
-          tag: 'produto_${widget.produto.id}',
-          child: imagemWidget,
-        ),
-      ),
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final produto = widget.produto;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: CoresApp.superficieCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: produto.emDestaque
-              ? CoresApp.roxoNeon.withOpacity(0.5)
-              : CoresApp.bordaCard,
-          width: produto.emDestaque ? 1.5 : 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: produto.emDestaque
-                ? CoresApp.roxoNeon.withOpacity(0.12)
-                : Colors.black26,
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.86, end: 1),
+      duration: const Duration(milliseconds: 480),
+      curve: Curves.easeOutBack,
+      builder: (context, scale, child) {
+        return Transform.scale(
+          scale: scale,
+          child: child,
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF101827), Color(0xFF0F0F1A)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: widget.aoClicar,
-          borderRadius: BorderRadius.circular(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Imagem e Badges
-              Stack(
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: const Color(0xFF4DE1FF).withValues(alpha: 0.8),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.cyan.withValues(alpha: 0.22),
+              blurRadius: 18,
+              offset: const Offset(0, 0),
+            ),
+            BoxShadow(
+              color: Colors.purple.withValues(alpha: 0.18),
+              blurRadius: 26,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: aoVerDetalhes,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _construirImagemProduto(),
-                  // Badge Categoria
-                  Positioned(
-                    top: 10,
-                    left: 10,
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.75),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: CoresApp.cianoEletrico, width: 0.8),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+                        borderRadius: BorderRadius.circular(14),
                       ),
-                      child: Text(
-                        produto.nomeCategoriaEmPortugues,
-                        style: const TextStyle(
-                          color: CoresApp.cianoEletrico,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                      child: SizedBox(
+                        width: 98,
+                        height: 98,
+                        child: Image.network(
+                          produto.imagemUrl,
+                          fit: BoxFit.cover,
+                          width: 98,
+                          height: 98,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              color: Colors.black26,
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.cyanAccent,
+                                ),
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.black26,
+                              child: Icon(
+                                _obterIconeCategoria(produto.categoria),
+                                color: Colors.cyanAccent,
+                                size: 32,
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ),
                   ),
-                  // Botão de Favorito no Cache
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: CircleAvatar(
-                      radius: 17,
-                      backgroundColor: Colors.black.withOpacity(0.65),
-                      child: IconButton(
-                        iconSize: 18,
-                        padding: EdgeInsets.zero,
-                        icon: Icon(
-                          _favorito ? Icons.favorite : Icons.favorite_border,
-                          color: _favorito ? Colors.redAccent : Colors.white70,
-                        ),
-                        onPressed: _alternarFavorito,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              // Conteúdo textual e especificações
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Avaliação e Marca
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                produto.marca.toUpperCase(),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                produto.nome,
                                 style: const TextStyle(
-                                  color: CoresApp.textoApagado,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            IconButton(
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              icon: const Icon(Icons.edit, color: Colors.amber, size: 20),
+                              onPressed: aoEditar,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 6,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.deepPurple.withValues(alpha: 0.18),
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(color: Colors.purpleAccent.withValues(alpha: 0.3)),
+                              ),
+                              child: Text(
+                                produto.nomeCategoriaEmPortugues,
+                                style: const TextStyle(
+                                  color: Colors.purpleAccent,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.green.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.35)),
+                              ),
+                              child: Text(
+                                '⭐ ${produto.avaliacao.toStringAsFixed(1)}',
+                                style: const TextStyle(
+                                  color: Colors.greenAccent,
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.8,
                                 ),
                               ),
-                              Row(
-                                children: [
-                                  const Icon(Icons.star, color: Colors.amber, size: 14),
-                                  const SizedBox(width: 3),
-                                  Text(
-                                    produto.avaliacao.toStringAsFixed(1),
-                                    style: const TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          produto.obterResumoEspecificacoes(),
+                          style: const TextStyle(color: Colors.grey, fontSize: 11),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Text(
+                              'R\$ ${produto.preco.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                color: Colors.cyanAccent,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-
-                          // Nome do Produto
-                          Text(
-                            produto.nome,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: CoresApp.textoPrincipal,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              height: 1.2,
                             ),
-                          ),
-                          const SizedBox(height: 6),
-
-                          // Resumo de Especificações (Polimórfico - Critério 11)
-                          Text(
-                            produto.obterResumoEspecificacoes(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: CoresApp.cianoEletrico,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
+                            const SizedBox(width: 8),
+                            Text(
+                              'PIX: R\$ ${produto.calcularDescontoPix().toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                color: Colors.greenAccent,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
+                        onPressed: aoEliminar,
                       ),
-
-                      // Preço e Botão de Adicionar
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Preço normal e parcelamento
-                          Text(
-                            produto.preco.paraReal(),
-                            style: const TextStyle(
-                              color: CoresApp.textoSecundario,
-                              fontSize: 12,
-                              decoration: TextDecoration.lineThrough,
+                      const SizedBox(height: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF00E5FF), Color(0xFF8A2BE2)],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.cyan.withValues(alpha: 0.4),
+                              blurRadius: 14,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton.icon(
+                          onPressed: aoAdicionarAoCarrinho,
+                          icon: const Icon(Icons.shopping_cart_rounded, size: 16, color: Colors.white),
+                          label: const Text(
+                            'Carrinho',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            foregroundColor: Colors.white,
+                            shadowColor: Colors.transparent,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          // Preço com Desconto no PIX (Polimórfico)
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                produto.calcularDescontoPix().paraReal(),
-                                style: const TextStyle(
-                                  color: CoresApp.verdeSucesso,
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              const Text(
-                                'no PIX',
-                                style: TextStyle(
-                                  color: CoresApp.verdeSucesso,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-
-                          // Botão Comprar / Adicionar
-                          SizedBox(
-                            width: double.infinity,
-                            height: 36,
-                            child: ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: CoresApp.roxoEscuro,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                padding: EdgeInsets.zero,
-                              ),
-                              onPressed: produto.temEstoque ? widget.aoAdicionarCarrinho : null,
-                              icon: const Icon(Icons.add_shopping_cart, size: 16),
-                              label: Text(
-                                produto.temEstoque ? 'Comprar' : 'Esgotado',
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ],
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  IconData _obterIconeCategoria(CategoriaProduto categoria) {
+    switch (categoria) {
+      case CategoriaProduto.computador:
+        return Icons.desktop_windows;
+      case CategoriaProduto.periferico:
+        return Icons.mouse;
+      case CategoriaProduto.console:
+        return Icons.sports_esports;
+    }
   }
 }

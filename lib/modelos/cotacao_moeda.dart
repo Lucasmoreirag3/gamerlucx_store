@@ -1,5 +1,5 @@
 /// Critério 8 (Desejável): Integração de múltiplas APIs.
-/// Modelo para a cotação de moedas em tempo real da AwesomeAPI (https://economia.awesomeapi.com.br/last/USD-BRL).
+/// Modelo para a cotação de moedas em tempo real da AwesomeAPI.
 class CotacaoMoeda {
   final String codigo;
   final String nome;
@@ -26,6 +26,17 @@ class CotacaoMoeda {
       valorVenda: double.tryParse(usdData['ask']?.toString() ?? '5.42') ?? 5.42,
       variacao: double.tryParse(usdData['pctChange']?.toString() ?? '0.0') ?? 0.0,
       dataAtualizacao: usdData['create_date'] ?? DateTime.now().toString(),
+    );
+  }
+
+  factory CotacaoMoeda.fromMap(Map<String, dynamic> json) {
+    return CotacaoMoeda(
+      codigo: json['code'] ?? 'USD',
+      nome: json['name'] ?? 'Dólar Americano/Real Brasileiro',
+      valorCompra: double.tryParse(json['bid']?.toString() ?? '5.40') ?? 5.40,
+      valorVenda: double.tryParse(json['ask']?.toString() ?? '5.42') ?? 5.42,
+      variacao: double.tryParse(json['pctChange']?.toString() ?? '0.0') ?? 0.0,
+      dataAtualizacao: json['create_date'] ?? DateTime.now().toString(),
     );
   }
 

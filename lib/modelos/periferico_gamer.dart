@@ -1,11 +1,10 @@
 import 'produto.dart';
 
-/// Critério 11 (Crítico): Subclasse concreta para Periféricos Gamers (Teclados, Mouses, Headsets, Monitores).
 class PerifericoGamer extends Produto {
-  final String tipoPeriferico;
-  final String conexao;
-  final String especificacaoChave;
+  final String tipoConexao;
   final bool iluminacaoRgb;
+  final int dpiOuFrequencia;
+  final String subcategoria;
 
   const PerifericoGamer({
     required super.id,
@@ -15,36 +14,28 @@ class PerifericoGamer extends Produto {
     required super.imagemUrl,
     required super.descricao,
     required super.quantidadeEstoque,
-    super.avaliacao,
-    super.emDestaque,
-    required this.tipoPeriferico,
-    required this.conexao,
-    required this.especificacaoChave,
-    this.iluminacaoRgb = true,
-  }) : super(categoria: CategoriaProduto.periferico);
+    super.avaliacao = 5.0,
+    super.emDestaque = false,
+    super.categoria = CategoriaProduto.periferico,
+    required this.tipoConexao,
+    required this.iluminacaoRgb,
+    required this.dpiOuFrequencia,
+    required this.subcategoria,
+  });
 
   @override
   String obterDescricaoTecnica() {
-    final rgbTexto = iluminacaoRgb ? 'RGB Chroma Personalizável via Software' : 'Sem iluminação RGB';
-    return '''
-• Tipo de Dispositivo: $tipoPeriferico
-• Destaque Técnico: $especificacaoChave
-• Conexão: $conexao
-• Iluminação: $rgbTexto
-• Construção: Materiais premium com alta durabilidade (ultra-resistente)
-• Compatibilidade: PC, Mac, PlayStation e Xbox
-''';
+    return 'Tipo: $subcategoria\nConexão: $tipoConexao\nRGB Chroma: ${iluminacaoRgb ? "Sim" : "Não"}\nDPI/Frequência: $dpiOuFrequencia';
   }
 
   @override
   double calcularDescontoPix() {
-    // Periféricos contam com 10% de desconto no Pix à vista
     return preco * 0.90;
   }
 
   @override
   String obterResumoEspecificacoes() {
-    return '$tipoPeriferico | $conexao | $especificacaoChave';
+    return '$subcategoria | $tipoConexao | ${iluminacaoRgb ? "RGB" : "Sem RGB"}';
   }
 
   @override
@@ -59,29 +50,31 @@ class PerifericoGamer extends Produto {
       'quantidadeEstoque': quantidadeEstoque,
       'avaliacao': avaliacao,
       'emDestaque': emDestaque,
+      'categoria': categoria.name,
       'tipo_categoria': 'periferico',
-      'tipoPeriferico': tipoPeriferico,
-      'conexao': conexao,
-      'especificacaoChave': especificacaoChave,
+      'tipoConexao': tipoConexao,
       'iluminacaoRgb': iluminacaoRgb,
+      'dpiOuFrequencia': dpiOuFrequencia,
+      'subcategoria': subcategoria,
     };
   }
 
   factory PerifericoGamer.fromJson(Map<String, dynamic> json) {
     return PerifericoGamer(
       id: json['id']?.toString() ?? '',
-      nome: json['nome'] ?? '',
-      marca: json['marca'] ?? '',
-      preco: (json['preco'] as num?)?.toDouble() ?? 0.0,
-      imagemUrl: json['imagemUrl'] ?? '',
-      descricao: json['descricao'] ?? '',
-      quantidadeEstoque: (json['quantidadeEstoque'] as num?)?.toInt() ?? 0,
-      avaliacao: (json['avaliacao'] as num?)?.toDouble() ?? 5.0,
-      emDestaque: json['emDestaque'] == true,
-      tipoPeriferico: json['tipoPeriferico'] ?? 'Periférico',
-      conexao: json['conexao'] ?? 'USB',
-      especificacaoChave: json['especificacaoChave'] ?? 'Alta Precisão',
+      nome: json['nome'] ?? json['title'] ?? 'Periférico Pro',
+      marca: json['marca'] ?? 'Razer / Logitech',
+      preco: (json['preco'] as num?)?.toDouble() ?? 399.90,
+      imagemUrl: json['imagemUrl'] ?? 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=500',
+      descricao: json['descricao'] ?? json['body'] ?? 'Periférico gamer com alta precisão e ergonomia.',
+      quantidadeEstoque: json['quantidadeEstoque'] ?? 12,
+      avaliacao: (json['avaliacao'] as num?)?.toDouble() ?? 4.8,
+      emDestaque: json['emDestaque'] ?? false,
+      categoria: CategoriaProduto.periferico,
+      tipoConexao: json['tipoConexao'] ?? 'Wireless / USB-C',
       iluminacaoRgb: json['iluminacaoRgb'] ?? true,
+      dpiOuFrequencia: json['dpiOuFrequencia'] ?? 20000,
+      subcategoria: json['subcategoria'] ?? 'Mouse Gamer',
     );
   }
 }

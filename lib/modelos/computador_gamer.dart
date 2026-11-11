@@ -1,14 +1,12 @@
 import 'produto.dart';
 
-/// Critério 11 (Crítico): Subclasse concreta representando Computadores Gamers completos.
-/// Herda de Produto e implementa regras de negócio específicas para hardware de alto desempenho.
 class ComputadorGamer extends Produto {
   final String processador;
   final String placaDeVideo;
   final int memoriaRamGb;
-  final int armazenamentoSsdGb;
-  final int fonteWatts;
-  final bool refrigeracaoLiquida;
+  final String armazenamento;
+  final String fonteAlimentacao;
+  final bool possuiWaterCooler;
 
   const ComputadorGamer({
     required super.id,
@@ -18,40 +16,30 @@ class ComputadorGamer extends Produto {
     required super.imagemUrl,
     required super.descricao,
     required super.quantidadeEstoque,
-    super.avaliacao,
-    super.emDestaque,
+    super.avaliacao = 5.0,
+    super.emDestaque = false,
+    super.categoria = CategoriaProduto.computador,
     required this.processador,
     required this.placaDeVideo,
     required this.memoriaRamGb,
-    required this.armazenamentoSsdGb,
-    required this.fonteWatts,
-    this.refrigeracaoLiquida = true,
-  }) : super(categoria: CategoriaProduto.computador);
+    required this.armazenamento,
+    required this.fonteAlimentacao,
+    required this.possuiWaterCooler,
+  });
 
   @override
   String obterDescricaoTecnica() {
-    final tipoCooler = refrigeracaoLiquida ? 'Water Cooler 360mm RGB' : 'Air Cooler Gamer';
-    return '''
-• Processador: $processador
-• Placa de Vídeo: $placaDeVideo
-• Memória RAM: ${memoriaRamGb}GB DDR5 RGB
-• Armazenamento: ${armazenamentoSsdGb >= 1000 ? '${armazenamentoSsdGb ~/ 1000}TB' : '${armazenamentoSsdGb}GB'} SSD NVMe M.2
-• Fonte: ${fonteWatts}W 80 Plus Gold Modular
-• Refrigeração: $tipoCooler
-• Gabinete: Aquário Gamer com Vidro Temperado e Fans ARGB
-• Sistema: Windows 11 Pro Otimizado para Jogos
-''';
+    return 'Processador: $processador\nPlaca de Vídeo: $placaDeVideo\nMemória: ${memoriaRamGb}GB RAM\nArmazenamento:$armazenamento\nFonte: $fonteAlimentacao\nRefrigeração: ${possuiWaterCooler ? "Water Cooler 240mm" : "Air Cooler"}';
   }
 
   @override
   double calcularDescontoPix() {
-    // Computadores na GameLuX contam com 12% de desconto especial no pagamento via Pix
     return preco * 0.88;
   }
 
   @override
   String obterResumoEspecificacoes() {
-    return '$processador | $placaDeVideo | ${memoriaRamGb}GB RAM';
+    return '$processador \vert{}$placaDeVideo | ${memoriaRamGb}GB \vert{}$armazenamento';
   }
 
   @override
@@ -66,33 +54,35 @@ class ComputadorGamer extends Produto {
       'quantidadeEstoque': quantidadeEstoque,
       'avaliacao': avaliacao,
       'emDestaque': emDestaque,
+      'categoria': categoria.name,
       'tipo_categoria': 'computador',
       'processador': processador,
       'placaDeVideo': placaDeVideo,
       'memoriaRamGb': memoriaRamGb,
-      'armazenamentoSsdGb': armazenamentoSsdGb,
-      'fonteWatts': fonteWatts,
-      'refrigeracaoLiquida': refrigeracaoLiquida,
+      'armazenamento': armazenamento,
+      'fonteAlimentacao': fonteAlimentacao,
+      'possuiWaterCooler': possuiWaterCooler,
     };
   }
 
   factory ComputadorGamer.fromJson(Map<String, dynamic> json) {
     return ComputadorGamer(
       id: json['id']?.toString() ?? '',
-      nome: json['nome'] ?? '',
-      marca: json['marca'] ?? '',
-      preco: (json['preco'] as num?)?.toDouble() ?? 0.0,
-      imagemUrl: json['imagemUrl'] ?? '',
-      descricao: json['descricao'] ?? '',
-      quantidadeEstoque: (json['quantidadeEstoque'] as num?)?.toInt() ?? 0,
+      nome: json['nome'] ?? json['title'] ?? 'PC Gamer',
+      marca: json['marca'] ?? 'GameLuX Custom',
+      preco: (json['preco'] as num?)?.toDouble() ?? 5999.00,
+      imagemUrl: json['imagemUrl'] ?? 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=500',
+      descricao: json['descricao'] ?? json['body'] ?? 'PC Gamer de alta performance pronto para jogar.',
+      quantidadeEstoque: json['quantidadeEstoque'] ?? 5,
       avaliacao: (json['avaliacao'] as num?)?.toDouble() ?? 5.0,
-      emDestaque: json['emDestaque'] == true,
-      processador: json['processador'] ?? 'Intel Core i7',
-      placaDeVideo: json['placaDeVideo'] ?? 'GeForce RTX',
-      memoriaRamGb: (json['memoriaRamGb'] as num?)?.toInt() ?? 16,
-      armazenamentoSsdGb: (json['armazenamentoSsdGb'] as num?)?.toInt() ?? 1000,
-      fonteWatts: (json['fonteWatts'] as num?)?.toInt() ?? 750,
-      refrigeracaoLiquida: json['refrigeracaoLiquida'] ?? true,
+      emDestaque: json['emDestaque'] ?? true,
+      categoria: CategoriaProduto.computador,
+      processador: json['processador'] ?? 'Intel Core i7 13700F',
+      placaDeVideo: json['placaDeVideo'] ?? 'GeForce RTX 4070 12GB',
+      memoriaRamGb: json['memoriaRamGb'] ?? 32,
+      armazenamento: json['armazenamento'] ?? '1TB SSD NVMe M.2',
+      fonteAlimentacao: json['fonteAlimentacao'] ?? '750W 80 Plus Gold',
+      possuiWaterCooler: json['possuiWaterCooler'] ?? true,
     );
   }
 }

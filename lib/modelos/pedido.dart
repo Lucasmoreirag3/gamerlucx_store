@@ -63,6 +63,10 @@ class Pedido {
     };
   }
 
+  Map<String, dynamic> toMap() {
+    return toJson();
+  }
+
   factory Pedido.fromJson(Map<String, dynamic> json) {
     return Pedido(
       id: json['id'] ?? '',

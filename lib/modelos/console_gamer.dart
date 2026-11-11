@@ -1,11 +1,10 @@
 import 'produto.dart';
 
-/// Critério 11 (Crítico): Subclasse concreta para Videogames e Consoles.
 class ConsoleGamer extends Produto {
-  final String fabricante;
-  final int armazenamentoGb;
-  final String edicao;
-  final int quantidadeControles;
+  final String plataforma;
+  final String capacidadeArmazenamento;
+  final int quantidadeControlesInclusos;
+  final bool suportaMidiaFisica;
 
   const ConsoleGamer({
     required super.id,
@@ -15,41 +14,28 @@ class ConsoleGamer extends Produto {
     required super.imagemUrl,
     required super.descricao,
     required super.quantidadeEstoque,
-    super.avaliacao,
-    super.emDestaque,
-    required this.fabricante,
-    required this.armazenamentoGb,
-    required this.edicao,
-    this.quantidadeControles = 1,
-  }) : super(categoria: CategoriaProduto.console);
+    super.avaliacao = 5.0,
+    super.emDestaque = false,
+    super.categoria = CategoriaProduto.console,
+    required this.plataforma,
+    required this.capacidadeArmazenamento,
+    required this.quantidadeControlesInclusos,
+    required this.suportaMidiaFisica,
+  });
 
   @override
   String obterDescricaoTecnica() {
-    final armazenamentoTexto = armazenamentoGb >= 1000
-        ? '${armazenamentoGb ~/ 1000}TB SSD Ultra-Rápido'
-        : '${armazenamentoGb}GB';
-
-    return '''
-• Fabricante Oficial: $fabricante
-• Edição: $edicao
-• Armazenamento Interno: $armazenamentoTexto
-• Controles Inclusos: $quantidadeControles Controle(s) Sem Fio com Resposta Háptica
-• Resolução: Suporte a 4K HDR a até 120 FPS / Ray Tracing nativo
-• Áudio: Áudio 3D Espacial imersivo
-• Garantia: 12 meses oficial com nota fiscal
-''';
+    return 'Plataforma: $plataforma\nArmazenamento: $capacidadeArmazenamento\nControles: $quantidadeControlesInclusos\nMídia Física: ${suportaMidiaFisica ? "Sim" : "Apenas Digital"}';
   }
 
   @override
   double calcularDescontoPix() {
-    // Consoles contam com 8% de desconto no Pix à vista
     return preco * 0.92;
   }
 
   @override
   String obterResumoEspecificacoes() {
-    final arm = armazenamentoGb >= 1000 ? '${armazenamentoGb ~/ 1000}TB SSD' : '${armazenamentoGb}GB';
-    return '$fabricante | $edicao | $arm';
+    return '$plataforma | $capacidadeArmazenamento | ${suportaMidiaFisica ? "Com Leitor" : "Digital"}';
   }
 
   @override
@@ -64,29 +50,31 @@ class ConsoleGamer extends Produto {
       'quantidadeEstoque': quantidadeEstoque,
       'avaliacao': avaliacao,
       'emDestaque': emDestaque,
+      'categoria': categoria.name,
       'tipo_categoria': 'console',
-      'fabricante': fabricante,
-      'armazenamentoGb': armazenamentoGb,
-      'edicao': edicao,
-      'quantidadeControles': quantidadeControles,
+      'plataforma': plataforma,
+      'capacidadeArmazenamento': capacidadeArmazenamento,
+      'quantidadeControlesInclusos': quantidadeControlesInclusos,
+      'suportaMidiaFisica': suportaMidiaFisica,
     };
   }
 
   factory ConsoleGamer.fromJson(Map<String, dynamic> json) {
     return ConsoleGamer(
       id: json['id']?.toString() ?? '',
-      nome: json['nome'] ?? '',
-      marca: json['marca'] ?? '',
-      preco: (json['preco'] as num?)?.toDouble() ?? 0.0,
-      imagemUrl: json['imagemUrl'] ?? '',
-      descricao: json['descricao'] ?? '',
-      quantidadeEstoque: (json['quantidadeEstoque'] as num?)?.toInt() ?? 0,
-      avaliacao: (json['avaliacao'] as num?)?.toDouble() ?? 5.0,
-      emDestaque: json['emDestaque'] == true,
-      fabricante: json['fabricante'] ?? 'Fabricante',
-      armazenamentoGb: (json['armazenamentoGb'] as num?)?.toInt() ?? 1000,
-      edicao: json['edicao'] ?? 'Padrão',
-      quantidadeControles: (json['quantidadeControles'] as num?)?.toInt() ?? 1,
+      nome: json['nome'] ?? json['title'] ?? 'Console Gamer',
+      marca: json['marca'] ?? 'Sony / Microsoft / Nintendo',
+      preco: (json['preco'] as num?)?.toDouble() ?? 4299.00,
+      imagemUrl: json['imagemUrl'] ?? 'https://images.unsplash.com/photo-1606813907291-d86efa9b94db?w=500',
+      descricao: json['descricao'] ?? json['body'] ?? 'Console de última geração com suporte a jogos 4K.',
+      quantidadeEstoque: json['quantidadeEstoque'] ?? 8,
+      avaliacao: (json['avaliacao'] as num?)?.toDouble() ?? 4.9,
+      emDestaque: json['emDestaque'] ?? true,
+      categoria: CategoriaProduto.console,
+      plataforma: json['plataforma'] ?? 'PlayStation 5',
+      capacidadeArmazenamento: json['capacidadeArmazenamento'] ?? '1TB SSD',
+      quantidadeControlesInclusos: json['quantidadeControlesInclusos'] ?? 1,
+      suportaMidiaFisica: json['suportaMidiaFisica'] ?? true,
     );
   }
 }

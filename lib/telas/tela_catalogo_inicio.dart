@@ -1,22 +1,18 @@
 import 'package:flutter/material.dart';
-import '../constantes/cores_app.dart';
 import '../modelos/produto.dart';
 import '../modelos/item_carrinho.dart';
 import '../servicos/api_catalogo_servico.dart';
-import '../servicos/armazenamento_interno_servico.dart';
-import '../componentes/cartao_produto.dart';
-import '../componentes/seletor_categorias.dart';
-import '../componentes/barra_pesquisa.dart';
 import '../componentes/banner_promocoes.dart';
+import '../componentes/barra_pesquisa.dart';
+import '../componentes/seletor_categorias.dart';
+import '../componentes/conversor_moeda_widget.dart';
+import '../componentes/simulador_frete_widget.dart';
+import '../componentes/cartao_produto.dart';
 import 'tela_detalhes_produto.dart';
 import 'tela_carrinho_compras.dart';
 import 'tela_gerenciar_produtos.dart';
 import 'tela_perfil_usuario.dart';
 
-/// Tela Principal da Loja GameLuX Store.
-/// Implementa a listagem dinâmica com GET da API RESTful (Critério 8),
-/// cache local para modo offline (Critério 7),
-/// componentização avançada (Critério 11) e design gamer responsivo.
 class TelaCatalogoInicio extends StatefulWidget {
   const TelaCatalogoInicio({super.key});
 
@@ -25,424 +21,463 @@ class TelaCatalogoInicio extends StatefulWidget {
 }
 
 class _TelaCatalogoInicioState extends State<TelaCatalogoInicio> {
-  int _indiceAbaAtual = 0;
+  final ApiCatalogoServico _servicoApi = ApiCatalogoServico();
   List<Produto> _produtos = [];
-  bool _carregando = true;
-  String _termoBusca = '';
+  List<Produto> _produtosExibidos = [];
+  final List<ItemCarrinho> _carrinho = [];
+  bool _aCarregar = true;
   CategoriaProduto? _categoriaFiltro;
-  int _quantidadeItensCarrinho = 0;
-
-  final TextEditingController _controladorBusca = TextEditingController();
+  String _termoBusca = '';
 
   @override
   void initState() {
     super.initState();
-    _carregarDadosIniciais();
+    _carregarProdutos();
   }
 
-  @override
-  void dispose() {
-    _controladorBusca.dispose();
-    super.dispose();
-  }
-
-  Future<void> _carregarDadosIniciais() async {
-    setState(() => _carregando = true);
-    await _buscarProdutosDaApi();
-    await _atualizarContadorCarrinho();
-    if (mounted) {
-      setState(() => _carregando = false);
-    }
-  }
-
-  /// CRITÉRIO 8 (Crítico): Realizando comunicação GET
-  Future<void> _buscarProdutosDaApi() async {
-    final produtos = await ApiCatalogoServico.obterProdutos();
-    if (mounted) {
+  Future<void> _carregarProdutos() async {
+    setState(() => _aCarregar = true);
+    try {
+      final itens = await _servicoApi.obterProdutos();
       setState(() {
-        _produtos = produtos;
+        _produtos = itens;
+        _filtrar();
       });
-    }
-  }
-
-  Future<void> _atualizarContadorCarrinho() async {
-    final carrinho = await ArmazenamentoInternoServico.obterCarrinho();
-    if (mounted) {
+    } catch (_) {
       setState(() {
-        _quantidadeItensCarrinho = carrinho.fold(0, (s, i) => s + i.quantidade);
+        _produtos = [];
+        _filtrar();
       });
-    }
-  }
-
-  Future<void> _adicionarAoCarrinho(Produto produto) async {
-    final itens = await ArmazenamentoInternoServico.obterCarrinho();
-    final index = itens.indexWhere((i) => i.produto.id == produto.id);
-
-    if (index != -1) {
-      itens[index].quantidade++;
-    } else {
-      itens.add(ItemCarrinho(produto: produto, quantidade: 1));
-    }
-
-    await ArmazenamentoInternoServico.salvarCarrinho(itens);
-    await _atualizarContadorCarrinho();
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: CoresApp.verdeSucesso,
-          duration: const Duration(seconds: 2),
-          content: Text('${produto.nome} adicionado ao carrinho!'),
-          action: SnackBarAction(
-            label: 'VER CARRINHO',
-            textColor: Colors.white,
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const TelaCarrinhoCompras()),
-              );
-              _atualizarContadorCarrinho();
-            },
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erro ao carregar produtos da API pessoal. Verifique servidor em http://localhost:3000.'),
+            backgroundColor: Colors.redAccent,
           ),
-        ),
-      );
-    }
-  }
-
-  List<Produto> get _produtosFiltrados {
-    return _produtos.where((p) {
-      // Filtro de categoria
-      if (_categoriaFiltro != null && p.categoria != _categoriaFiltro) {
-        return false;
+        );
       }
-      // Filtro de texto da barra de busca
-      if (_termoBusca.isNotEmpty) {
-        final busca = _termoBusca.toLowerCase();
-        final matchNome = p.nome.toLowerCase().contains(busca);
-        final matchMarca = p.marca.toLowerCase().contains(busca);
-        final matchDescricao = p.descricao.toLowerCase().contains(busca);
-        final matchResumo = p.obterResumoEspecificacoes().toLowerCase().contains(busca);
-        return matchNome || matchMarca || matchDescricao || matchResumo;
-      }
-      return true;
-    }).toList();
+    }
+    setState(() => _aCarregar = false);
   }
 
-  Widget _construirAbaCatalogo() {
-    final produtos = _produtosFiltrados;
+  Future<void> _removerProduto(Produto produto) async {
+    try {
+      final ok = await _servicoApi.excluirProduto(produto.id);
+      if (!ok) {
+        throw Exception('Falha na exclusão do produto');
+      }
 
-    return RefreshIndicator(
-      color: CoresApp.cianoEletrico,
-      backgroundColor: CoresApp.superficieCardElevada,
-      onRefresh: _carregarDadosIniciais,
-      child: CustomScrollView(
-        slivers: [
-          // AppBar Customizada com Logo Gamer e Ícones
-          SliverAppBar(
-            backgroundColor: CoresApp.fundoPrincipal,
-            pinned: true,
-            elevation: 0,
-            expandedHeight: 70,
-            flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              title: Row(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.asset(
-                      'assets/imagens/logo_gamelux.jpg',
-                      width: 32,
-                      height: 32,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => const Icon(
-                        Icons.sports_esports,
-                        color: CoresApp.cianoEletrico,
-                        size: 28,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'GameLuX',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      Text(
-                        'STORE',
-                        style: TextStyle(
-                          color: CoresApp.cianoEletrico,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              // Botão Painel Lojista / Admin
-              IconButton(
-                icon: const Icon(Icons.admin_panel_settings_outlined, color: CoresApp.cianoEletrico),
-                tooltip: 'Gerenciador da Loja (CRUD)',
-                onPressed: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const TelaGerenciarProdutos()),
-                  );
-                  _buscarProdutosDaApi();
-                },
-              ),
-              // Botão Carrinho com Badge
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
-                    tooltip: 'Carrinho de Compras',
-                    onPressed: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const TelaCarrinhoCompras()),
-                      );
-                      _atualizarContadorCarrinho();
-                    },
-                  ),
-                  if (_quantidadeItensCarrinho > 0)
-                    Positioned(
-                      right: 6,
-                      top: 6,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: CoresApp.roxoNeon,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Text(
-                          '$_quantidadeItensCarrinho',
-                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(width: 8),
-            ],
+      setState(() {
+        _produtos.removeWhere((item) => item.id == produto.id);
+        _filtrar();
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${produto.nome} removido da API e do catálogo.'),
+            backgroundColor: Colors.redAccent,
           ),
-
-          // Barra de Pesquisa
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-              child: BarraPesquisa(
-                controlador: _controladorBusca,
-                aoDigitar: (termo) => setState(() => _termoBusca = termo),
-                aoLimpar: () {
-                  _controladorBusca.clear();
-                  setState(() => _termoBusca = '');
-                },
-              ),
-            ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Não foi possível remover o produto da API pessoal.'),
+            backgroundColor: Colors.redAccent,
           ),
+        );
+      }
+    }
+  }
 
-          // Banner Promocional Destaque
-          if (_termoBusca.isEmpty)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: BannerPromocoes(
-                  aoClicarBanner: () {
-                    setState(() => _categoriaFiltro = CategoriaProduto.computador);
-                  },
-                ),
-              ),
-            ),
+  void _filtrar() {
+    setState(() {
+      _produtosExibidos = _produtos.where((p) {
+        final bateNome = p.nome.toLowerCase().contains(_termoBusca.toLowerCase());
+        final bateCat = _categoriaFiltro == null || p.categoria == _categoriaFiltro;
+        return bateNome && bateCat;
+      }).toList();
+    });
+  }
 
-          // Seletor de Categorias
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: SeletorCategorias(
-                categoriaSelecionada: _categoriaFiltro,
-                aoSelecionar: (categoria) {
-                  setState(() => _categoriaFiltro = categoria);
-                },
-              ),
-            ),
-          ),
-
-          // Título da Seção
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _categoriaFiltro == null
-                        ? 'Catálogo Gamer em Destaque'
-                        : 'Filtrando: ${_categoriaFiltro!.name.toUpperCase()}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    '${produtos.length} produtos',
-                    style: const TextStyle(color: CoresApp.textoApagado, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Grade de Produtos (GridView)
-          if (_carregando)
-            const SliverFillRemaining(
-              child: Center(
-                child: CircularProgressIndicator(color: CoresApp.cianoEletrico),
-              ),
-            )
-          else if (produtos.isEmpty)
-            SliverFillRemaining(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.search_off, size: 64, color: CoresApp.textoApagado),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Nenhum produto gamer encontrado.',
-                      style: TextStyle(color: Colors.white70, fontSize: 16),
-                    ),
-                    const SizedBox(height: 6),
-                    TextButton(
-                      child: const Text('Limpar Filtros', style: TextStyle(color: CoresApp.cianoEletrico)),
-                      onPressed: () {
-                        setState(() {
-                          _termoBusca = '';
-                          _categoriaFiltro = null;
-                          _controladorBusca.clear();
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            SliverPadding(
-              padding: const EdgeInsets.all(16),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.58,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final produto = produtos[index];
-                    return CartaoProduto(
-                      produto: produto,
-                      aoClicar: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => TelaDetalhesProduto(produto: produto),
-                          ),
-                        );
-                        _atualizarContadorCarrinho();
-                      },
-                      aoAdicionarCarrinho: () => _adicionarAoCarrinho(produto),
-                    );
-                  },
-                  childCount: produtos.length,
-                ),
-              ),
-            ),
-        ],
+  void _adicionarAoCarrinho(Produto produto) {
+    setState(() {
+      final idx = _carrinho.indexWhere((i) => i.produto.id == produto.id);
+      if (idx >= 0) {
+        _carrinho[idx].quantidade++;
+      } else {
+        _carrinho.add(ItemCarrinho(produto: produto));
+      }
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${produto.nome} adicionado ao carrinho!'),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.deepPurpleAccent,
       ),
     );
+  }
+
+  void _abrirCarrinho() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TelaCarrinhoCompras(itensCarrinho: _carrinho),
+      ),
+    );
+  }
+
+  void _abrirMenu() {
+    Scaffold.of(context).openDrawer();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: CoresApp.fundoPrincipal,
-      body: IndexedStack(
-        index: _indiceAbaAtual,
-        children: [
-          _construirAbaCatalogo(),
-          const TelaCarrinhoCompras(),
-          const TelaGerenciarProdutos(),
-          const TelaPerfilUsuario(),
-        ],
-      ),
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: CoresApp.superficieCardElevada,
-          border: Border(top: BorderSide(color: CoresApp.bordaCard, width: 0.8)),
+      backgroundColor: const Color(0xFF090D1A),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu_rounded),
+          onPressed: _abrirMenu,
         ),
-        child: BottomNavigationBar(
-          currentIndex: _indiceAbaAtual,
-          onTap: (index) {
-            setState(() => _indiceAbaAtual = index);
-            if (index == 0) _atualizarContadorCarrinho();
-          },
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          selectedItemColor: CoresApp.cianoEletrico,
-          unselectedItemColor: CoresApp.textoApagado,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
-          unselectedLabelStyle: const TextStyle(fontSize: 10),
-          items: [
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.storefront_rounded),
-              label: 'Loja',
-            ),
-            BottomNavigationBarItem(
-              icon: Stack(
-                children: [
-                  const Icon(Icons.shopping_bag_outlined),
-                  if (_quantidadeItensCarrinho > 0)
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: const BoxDecoration(
-                          color: CoresApp.roxoNeon,
-                          shape: BoxShape.circle,
-                        ),
-                        constraints: const BoxConstraints(minWidth: 12, minHeight: 12),
-                      ),
-                    ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF00E5FF), Color(0xFF8A2BE2)],
+                ),
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.cyan.withValues(alpha: 0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 0),
+                  ),
                 ],
               ),
-              label: 'Carrinho',
+              child: const Icon(Icons.videogame_asset_rounded, size: 18, color: Colors.white),
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_customize_outlined),
-              label: 'Gerenciar',
-            ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              label: 'Perfil',
+            const SizedBox(width: 10),
+            const Text(
+              'GameLuX',
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.4,
+              ),
             ),
           ],
         ),
+        backgroundColor: const Color(0xFF120B2B),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.inventory_2_rounded),
+            tooltip: 'Gerenciar catálogo',
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const TelaGerenciarProdutos()),
+              );
+              _carregarProdutos();
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.person_rounded),
+            tooltip: 'Perfil',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const TelaPerfilUsuario()),
+              );
+            },
+          ),
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.shopping_cart_rounded),
+                tooltip: 'Carrinho',
+                onPressed: _abrirCarrinho,
+              ),
+              if (_carrinho.isNotEmpty)
+                Positioned(
+                  right: 6,
+                  top: 6,
+                  child: CircleAvatar(
+                    radius: 8,
+                    backgroundColor: Colors.redAccent,
+                    child: Text(
+                      '${_carrinho.length}',
+                      style: const TextStyle(fontSize: 10, color: Colors.white),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+      drawer: Drawer(
+        backgroundColor: const Color(0xFF0B1026),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.horizontal(right: Radius.circular(22)),
+        ),
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF0B1026), Color(0xFF120B2B)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              DrawerHeader(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF0B1026), Color(0xFF120B2B)],
+                  ),
+                  border: const Border(bottom: BorderSide(color: Colors.cyan)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF00E5FF), Color(0xFF8A2BE2)],
+                        ),
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
+                      ),
+                      child: const Icon(Icons.videogame_asset_rounded, color: Colors.white, size: 28),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'GameLuX Arena',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _menuItem(Icons.home_rounded, 'Início', () {}),
+              _menuItem(Icons.shopping_bag_rounded, 'Ofertas', () {}),
+              _menuItem(Icons.favorite_rounded, 'Favoritos', () {}),
+              _menuItem(Icons.person_rounded, 'Perfil', () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const TelaPerfilUsuario()),
+                );
+              }),
+              _menuItem(Icons.inventory_2_rounded, 'Gerenciar catálogo', () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const TelaGerenciarProdutos()),
+                );
+              }),
+              const Divider(color: Colors.white12),
+              _menuItem(Icons.shopping_cart_rounded, 'Carrinho', () {
+                Navigator.pop(context);
+                _abrirCarrinho();
+              }),
+            ],
+          ),
+        ),
+      ),
+      body: _aCarregar
+          ? const Center(child: CircularProgressIndicator(color: Colors.deepPurpleAccent))
+          : RefreshIndicator(
+              onRefresh: _carregarProdutos,
+              child: ListView(
+                children: [
+                  const BannerPromocoes(),
+                  const ConversorMoedaWidget(),
+                  const SimuladorFreteWidget(),
+                  Container(
+                    margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF150F2A), Color(0xFF0D1E3A)],
+                      ),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: Colors.cyan.withValues(alpha: 0.35)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.cyan.withValues(alpha: 0.22),
+                          blurRadius: 16,
+                          offset: const Offset(0, 0),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text(
+                                'LOJA GAMER',
+                                style: TextStyle(
+                                  color: Colors.cyanAccent,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'Prepare seu setup para ganhar partidas!',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF00E5FF), Color(0xFF9D4EDD)],
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.cyan.withValues(alpha: 0.35),
+                                blurRadius: 18,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: ElevatedButton.icon(
+                            onPressed: _abrirCarrinho,
+                            icon: const Icon(Icons.shopping_cart_checkout_rounded, color: Colors.white),
+                            label: const Text('Carrinho', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              foregroundColor: Colors.white,
+                              shadowColor: Colors.transparent,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  BarraPesquisa(
+                    aoDigitar: (texto) {
+                      _termoBusca = texto;
+                      _filtrar();
+                    },
+                  ),
+                  SeletorCategorias(
+                    categoriaAtiva: _categoriaFiltro,
+                    aoSelecionar: (cat) {
+                      _categoriaFiltro = cat;
+                      _filtrar();
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  ..._produtosExibidos.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final prod = entry.value;
+                    return TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0.9, end: 1),
+                      duration: Duration(milliseconds: 300 + (index * 90)),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, value, child) {
+                        return Transform.translate(
+                          offset: Offset(0, (1 - value) * 14),
+                          child: Opacity(
+                            opacity: value,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: CartaoProduto(
+                        produto: prod,
+                        aoEditar: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => TelaDetalhesProduto(
+                              produto: prod,
+                              aoComprar: () => _adicionarAoCarrinho(prod),
+                            ),
+                          ),
+                        ),
+                        aoEliminar: () => _removerProduto(prod),
+                        aoAdicionarAoCarrinho: () => _adicionarAoCarrinho(prod),
+                        aoVerDetalhes: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => TelaDetalhesProduto(
+                                produto: prod,
+                                aoComprar: () => _adicionarAoCarrinho(prod),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+        decoration: const BoxDecoration(
+          color: Color(0xFF120B2B),
+          border: Border(top: BorderSide(color: Colors.white10)),
+        ),
+        child: ElevatedButton.icon(
+          onPressed: _abrirCarrinho,
+          icon: const Icon(Icons.shopping_cart_rounded),
+          label: const Text('IR PARA O CARRINHO'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF7C3AED),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _menuItem(IconData icon, String title, VoidCallback onTap) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: Colors.white.withValues(alpha: 0.02),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: Colors.cyanAccent),
+        title: Text(
+          title,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+        ),
+        onTap: onTap,
       ),
     );
   }

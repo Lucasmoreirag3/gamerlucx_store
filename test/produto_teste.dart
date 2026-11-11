@@ -19,8 +19,9 @@ void main() {
         processador: 'Intel Core i9',
         placaDeVideo: 'RTX 4080',
         memoriaRamGb: 32,
-        armazenamentoSsdGb: 1000,
-        fonteWatts: 850,
+        armazenamento: '1TB SSD',
+        fonteAlimentacao: '850W',
+        possuiWaterCooler: true,
       );
 
       expect(pc.calcularDescontoPix(), equals(8800.0));
@@ -37,13 +38,14 @@ void main() {
         imagemUrl: 'assets/imagens/teclado_mouse.jpg',
         descricao: 'Teclado para testes',
         quantidadeEstoque: 10,
-        tipoPeriferico: 'Teclado Mecânico',
-        conexao: 'USB-C',
-        especificacaoChave: 'Switch Red',
+        tipoConexao: 'USB-C',
+        iluminacaoRgb: true,
+        dpiOuFrequencia: 20000,
+        subcategoria: 'Teclado Mecânico',
       );
 
       expect(periferico.calcularDescontoPix(), equals(450.0));
-      expect(periferico.obterDescricaoTecnica().contains('Switch Red'), isTrue);
+      expect(periferico.obterDescricaoTecnica().contains('Teclado Mecânico'), isTrue);
       expect(periferico.categoria, equals(CategoriaProduto.periferico));
     });
 
@@ -56,9 +58,10 @@ void main() {
         imagemUrl: 'assets/imagens/console_aether.jpg',
         descricao: 'Console para testes',
         quantidadeEstoque: 3,
-        fabricante: 'Sony',
-        armazenamentoGb: 1000,
-        edicao: 'Slim',
+        plataforma: 'PlayStation 5',
+        capacidadeArmazenamento: '1TB SSD',
+        quantidadeControlesInclusos: 2,
+        suportaMidiaFisica: true,
       );
 
       expect(console.calcularDescontoPix(), equals(3680.0));
@@ -75,8 +78,9 @@ void main() {
         'processador': 'Ryzen 7',
         'placaDeVideo': 'RTX 4070',
         'memoriaRamGb': 32,
-        'armazenamentoSsdGb': 1000,
-        'fonteWatts': 750,
+        'armazenamento': '1TB SSD',
+        'fonteAlimentacao': '750W',
+        'possuiWaterCooler': true,
       };
 
       final produtoInstanciado = Produto.fromJson(jsonPc);

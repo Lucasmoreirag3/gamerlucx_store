@@ -1,22 +1,12 @@
 import 'package:flutter/material.dart';
-import 'constantes/cores_app.dart';
-import 'constantes/rotas_app.dart';
 import 'telas/tela_catalogo_inicio.dart';
-import 'telas/tela_carrinho_compras.dart';
-import 'telas/tela_gerenciar_produtos.dart';
-import 'telas/tela_perfil_usuario.dart';
 
-/// GameLuX Store - Aplicativo Mobile de E-commerce Gamer
-/// Projeto desenvolvido para a Situação de Aprendizagem "Da Tela Ao App Integrado"
-/// Escola e Faculdade de Tecnologia SENAI "Roberto Mange"
-/// Aluno: Lucas Moreira Gomes | Agência Digital Horizon
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(const GameLuxApp());
+  runApp(const GameLuXApp());
 }
 
-class GameLuxApp extends StatelessWidget {
-  const GameLuxApp({super.key});
+class GameLuXApp extends StatelessWidget {
+  const GameLuXApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -24,28 +14,31 @@ class GameLuxApp extends StatelessWidget {
       title: 'GameLuX Store',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: CoresApp.fundoPrincipal,
-        primaryColor: CoresApp.roxoNeon,
-        colorScheme: const ColorScheme.dark(
-          primary: CoresApp.roxoNeon,
-          secondary: CoresApp.cianoEletrico,
-          surface: CoresApp.superficieCard,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+          brightness: Brightness.dark,
+          surface: const Color(0xFF090D1A),
         ),
+        scaffoldBackgroundColor: const Color(0xFF090D1A),
+        useMaterial3: true,
         appBarTheme: const AppBarTheme(
-          backgroundColor: CoresApp.fundoPrincipal,
+          backgroundColor: Color(0xFF120B2B),
+          foregroundColor: Colors.white,
           elevation: 0,
-          centerTitle: false,
-          iconTheme: IconThemeData(color: Colors.white),
+          surfaceTintColor: Colors.transparent,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            elevation: 0,
+            shadowColor: Colors.cyan.withValues(alpha: 0.35),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
         ),
       ),
-      initialRoute: RotasApp.inicio,
-      routes: {
-        RotasApp.inicio: (context) => const TelaCatalogoInicio(),
-        RotasApp.carrinho: (context) => const TelaCarrinhoCompras(),
-        RotasApp.gerenciarProdutos: (context) => const TelaGerenciarProdutos(),
-        RotasApp.perfil: (context) => const TelaPerfilUsuario(),
-      },
+      home: const TelaCatalogoInicio(),
     );
   }
 }
+

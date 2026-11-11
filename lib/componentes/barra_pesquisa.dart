@@ -1,45 +1,27 @@
 import 'package:flutter/material.dart';
-import '../constantes/cores_app.dart';
 
-/// Critério 11 (Desejável): Otimizando código através de componentização.
-/// Barra de busca interativa com estética cyberpunk e limpeza rápida.
 class BarraPesquisa extends StatelessWidget {
-  final TextEditingController controlador;
   final ValueChanged<String> aoDigitar;
-  final VoidCallback aoLimpar;
 
-  const BarraPesquisa({
-    super.key,
-    required this.controlador,
-    required this.aoDigitar,
-    required this.aoLimpar,
-  });
+  const BarraPesquisa({super.key, required this.aoDigitar});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: CoresApp.superficieCard,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: CoresApp.bordaCard),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: TextField(
-        controller: controlador,
         onChanged: aoDigitar,
-        style: const TextStyle(color: CoresApp.textoPrincipal, fontSize: 14),
-        cursorColor: CoresApp.cianoEletrico,
+        style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
-          hintText: 'Buscar PC Gamer, Teclado, PS5, RTX...',
-          hintStyle: const TextStyle(color: CoresApp.textoApagado, fontSize: 13),
-          prefixIcon: const Icon(Icons.search, color: CoresApp.cianoEletrico),
-          suffixIcon: controlador.text.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.close, color: CoresApp.textoSecundario, size: 18),
-                  onPressed: aoLimpar,
-                )
-              : null,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          hintText: 'Pesquisar PC Gamer, periférico ou consola...',
+          hintStyle: const TextStyle(color: Colors.white54, fontSize: 13),
+          prefixIcon: const Icon(Icons.search, color: Colors.deepPurpleAccent),
+          filled: true,
+          fillColor: Colors.grey.shade900,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide.none,
+          ),
         ),
       ),
     );

@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: gamelux-store-api
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node api/server.js
+    autoDeploy: true
+    healthCheckPath: /health

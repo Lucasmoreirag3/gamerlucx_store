@@ -1,17 +1,14 @@
 /// Representa os dados sensíveis e privados do usuário cliente da GameLuX Store.
-/// Conforme especificado na Situação de Aprendizagem:
-/// - Dados sensíveis/privados (Nome, Email, Endereço residencial, Nick Gamer e Saldo de pontos)
-///   devem ser mantidos com segurança e persistidos no armazenamento local interno do dispositivo.
 class UsuarioCliente {
   final String id;
-  String nomeCompleto;
-  String nickGamer;
-  String email;
-  String cepPadrao;
-  String cidadeUf;
-  int pontosFidelidade;
+  final String nomeCompleto;
+  final String nickGamer;
+  final String email;
+  final String cepPadrao;
+  final String cidadeUf;
+  final int pontosFidelidade;
 
-  UsuarioCliente({
+  const UsuarioCliente({
     required this.id,
     required this.nomeCompleto,
     required this.nickGamer,
@@ -20,6 +17,10 @@ class UsuarioCliente {
     required this.cidadeUf,
     this.pontosFidelidade = 1500,
   });
+
+  String get nome => nomeCompleto;
+  String get apelidoGamer => nickGamer;
+  String get tokenAcesso => 'JWT_TOKEN_LOCAL_SENSIVEL_XYZ';
 
   Map<String, dynamic> toJson() {
     return {
@@ -45,9 +46,8 @@ class UsuarioCliente {
     );
   }
 
-  /// Dados padrão iniciais do usuário para inicialização suave
   factory UsuarioCliente.padrao() {
-    return UsuarioCliente(
+    return const UsuarioCliente(
       id: 'user_gamer_01',
       nomeCompleto: 'Lucas Moreira Gomes',
       nickGamer: 'LuX_Gamer',

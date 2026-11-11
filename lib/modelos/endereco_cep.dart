@@ -55,6 +55,19 @@ class EnderecoCep {
     );
   }
 
+  factory EnderecoCep.fromMap(Map<String, dynamic> json) {
+    return EnderecoCep(
+      cep: json['cep'] ?? '',
+      logradouro: json['logradouro'] ?? '',
+      complemento: json['complemento'] ?? '',
+      bairro: json['bairro'] ?? '',
+      localidade: json['localidade'] ?? '',
+      uf: json['uf'] ?? '',
+      valorFrete: (json['valorFrete'] as num?)?.toDouble() ?? 0.0,
+      prazoDiasUteis: (json['prazoDiasUteis'] as num?)?.toInt() ?? 2,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'cep': cep,
@@ -69,17 +82,9 @@ class EnderecoCep {
   }
 
   factory EnderecoCep.fromJson(Map<String, dynamic> json) {
-    return EnderecoCep(
-      cep: json['cep'] ?? '',
-      logradouro: json['logradouro'] ?? '',
-      complemento: json['complemento'] ?? '',
-      bairro: json['bairro'] ?? '',
-      localidade: json['localidade'] ?? '',
-      uf: json['uf'] ?? '',
-      valorFrete: (json['valorFrete'] as num?)?.toDouble() ?? 0.0,
-      prazoDiasUteis: (json['prazoDiasUteis'] as num?)?.toInt() ?? 2,
-    );
+    return EnderecoCep.fromMap(json);
   }
 
-  String get formatado => '$logradouro, $bairro - $localidade/$uf (CEP: $cep)';
+  String get enderecoCompleto => '$logradouro, $bairro - $localidade/$uf (CEP: $cep)';
+  String get formatado => enderecoCompleto;
 }
